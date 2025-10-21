@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Portal - América Fe y Alegría</title>
+  <style>
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --accent:#2b6cb0; --danger:#e53e3e;
+      --muted:#6b7280;
+      font-family: Inter, system-ui, Arial, sans-serif;
+    }
+    body{ margin:0; background:var(--bg); color:#111; }
+    header{ background:linear-gradient(90deg,#0ea5a8,#2b6cb0); color:white; padding:18px; display:flex; gap:16px; align-items:center;}
+    header img.logo{ height:56px; width:56px; object-fit:cover; border-radius:8px; background:white;}
+    header h1{ margin:0; font-size:20px; }
+    main{ padding:20px; max-width:1000px; margin:20px auto;}
+    .panel{ background:var(--card); padding:16px; border-radius:12px; box-shadow:0 6px 18px rgba(12,15,20,0.06); margin-bottom:16px;}
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+    label{ font-size:14px; color:var(--muted); }
+    input[type=text], input[type=password], textarea, select{
+      width:100%; padding:10px; border-radius:8px; border:1px solid #e6e9ef; font-size:14px;
+    }
+    button{ background:var(--accent); color:white; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+    button.secondary{ background:#e6eef9; color:var(--accent); }
+    .posts{ display:grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap:12px; }
+    .post{ border-radius:10px; overflow:hidden; border:1px solid #e9eef6; background:white; display:flex; flex-direction:column; }
+    .post .meta{ padding:10px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .post .body{ padding:10px; flex:1; }
+    .muted{ color:var(--muted); font-size:13px; }
+    .danger{ color:var(--danger); }
+    .file-preview{ max-height:220px; width:100%; object-fit:cover; display:block; margin-top:8px; border-radius:8px; }
+    .actions{ display:flex; gap:8px; }
+    small.note{ display:block; color:var(--muted); margin-top:8px; }
+    footer{ text-align:center; color:var(--muted); font-size:13px; margin-top:18px;}
+    @media (max-width:640px){ header{ flex-direction:column; align-items:flex-start } }
+  </style>
+</head>
+<body>
+  <header>
+    <!-- Reemplaza src por tu logo real -->
+    <img class="logo" id="siteLogo" src="logo_colegio.jpg" alt="Logo Colegio">
+    <div>
+      <h1>Portal - Colegio América Fe y Alegría</h1>
+      <div class="muted">Sube información sólo con el código. Visitantes: sólo lectura.</div>
+    </div>
+  </header>
+  
+  <main>
+    <!-- LOGIN / MODO -->
+    <section class="panel" id="authPanel">
+      <div class="row" style="align-items:flex-start;">
+        <div style="flex:1; min-width:220px;">
+          <label><strong>Entrar como:</strong></label>
+          <select id="modeSelect">
+            <option value="visitor">Visitante (sólo lectura)</option>
+            <option value="admin">Editor/Administrador (requiere código)</option>
+          </select>
+
+          <div id="adminInputs" style="margin-top:12px; display:none;">
+            <label>Nombre de identificación</label>
+            <input id="idName" type="text" placeholder="Ej: Mariano Miranda Torrez" />
+
+            <label style="margin-top:8px;">Código / Contraseña</label>
+            <input id="passwordField" type="password" placeholder="Contraseña" />
+
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <button id="btnLogin">Ingresar como editor</button>
+              <button id="btnCancel" class="secondary">Volver</button>
+            </div>
+
+            <small class="muted" id="loginNote" style="display:block; margin-top:8px;">
+              Tendrás 3 intentos. Si fallas, la página se bloqueará 1 hora.
+            </small>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button id="enterVisitor" class="secondary">Entrar como visitante</button>
+          </div>
+        </div>
+
+        <div style="width:260px;">
+          <label>Plantilla:</label>
+          <!-- Imagen de portada - reemplazar por tu foto -->
+          <img id="heroImage" src="colegio_imagen.jpg" style="width:100%; border-radius:8px; margin-top:8px;">
+          <small class="muted">Reemplaza por la imagen del colegio si la tienes.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- AREA DE SUBIDA (solo admins) -->
+    <section class="panel" id="uploadPanel" style="display:none;">
+      <h3>Crear nuevo post / subir archivo</h3>
+      <div class="row">
+        <div style="flex:1;">
+          <label>Título</label>
+          <input id="postTitle" type="text" placeholder="Título (obligatorio)" />
+
+          <label style="margin-top:8px;">Mensaje / descripción</label>
+          <textarea id="postDesc" rows="4" placeholder="Descripción breve"></textarea>
+
+          <label style="margin-top:8px;">Archivo (imagen, PDF, PPTX, doc, otros)</label>
+          <input id="fileInput" type="file" />
+
+          <label style="margin-top:8px;">Duración (opcional)</label>
+          <div style="display:flex; gap:8px;">
+            <input id="expiryValue" type="number" min="0" placeholder="Número" style="width:120px;" />
+            <select id="expiryUnit" style="width:160px;">
+              <option value="hours">Horas</option>
+              <option value="days">Días</option>
+              <option value="minutes">Minutos</option>
+              <option value="never" selected>Sin caducar</option>
+            </select>
+          </div>
+
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button id="btnCreate">Publicar</button>
+            <button id="btnClear" class="secondary">Limpiar</button>
+          </div>
+
+          <small class="note">Los archivos se guardan en tu navegador (localStorage). Para compartir en la red necesitas un servidor.</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- POSTS -->
+    <section class="panel">
+      <h3>Información publicada</h3>
+      <div id="postsContainer" class="posts">
+        <!-- posts dinámicos -->
+      </div>
+      <div id="noPosts" class="muted" style="margin-top:8px; display:none;">No hay publicaciones aún.</div>
+    </section>
+
+    <footer class="muted panel" style="text-align:center;">
+      SABER MAS PARA SERVIR MEJOR.
+    </footer>
+  </main>
+
+<script>
+/*
+  Implementación frontend:
+  - Almacenamos posts en localStorage bajo la clave: "afya_posts" (array JSON)
+  - Control de login: password duro (se puede cambiar) y verificación de nombre
+  - Intentos de login: "afya_login_attempts", bloqueo: "afya_lock_until"
+  - NOTA: Esto es para demo/local. Para producción MULTI-USUARIO se debe implementar servidor.
+*/
+
+/* ---------- CONFIGURACIÓN ---------- */
+// Contraseña por defecto: relativa al nombre del colegio "América fe y alegría" + números.
+// Puedes cambiarla aquí. (Por seguridad: esto está en el cliente = inseguro)
+const ADMIN_PASSWORD = "AmericaFeYAlegria2025"; // cambia si quieres
+const REQUIRED_NAME = "Roberto Rodríguez Sánchez"; // nombre requerido
+// Para comparar el nombre, se normaliza (se ignoran mayúsculas y tildes).
+function normalizeName(s){
+  if(!s) return "";
+  // quita tildes/acentos y pasa a minúsculas
+  const withNoAccents = s.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+  return withNoAccents.trim().toLowerCase();
+}
+
+/* ---------- HELPERS DE STORAGE ---------- */
+function loadPosts(){
+  const raw = localStorage.getItem("afya_posts");
+  if(!raw) return [];
+  try { return JSON.parse(raw) || []; } catch(e){ return []; }
+}
+function savePosts(posts){
+  localStorage.setItem("afya_posts", JSON.stringify(posts));
+}
+
+/* ---------- ELEMENTOS ---------- */
+const modeSelect = document.getElementById("modeSelect");
+const adminInputs = document.getElementById("adminInputs");
+const enterVisitor = document.getElementById("enterVisitor");
+const btnLogin = document.getElementById("btnLogin");
+const btnCancel = document.getElementById("btnCancel");
+const idName = document.getElementById("idName");
+const passwordField = document.getElementById("passwordField");
+const loginNote = document.getElementById("loginNote");
+const uploadPanel = document.getElementById("uploadPanel");
+const postsContainer = document.getElementById("postsContainer");
+const noPosts = document.getElementById("noPosts");
+const btnCreate = document.getElementById("btnCreate");
+const btnClear = document.getElementById("btnClear");
+const postTitle = document.getElementById("postTitle");
+const postDesc = document.getElementById("postDesc");
+const fileInput = document.getElementById("fileInput");
+const expiryValue = document.getElementById("expiryValue");
+const expiryUnit = document.getElementById("expiryUnit");
+const authPanel = document.getElementById("authPanel");
+
+/* ---------- LOGIN / MODO ---------- */
+modeSelect.addEventListener("change", () => {
+  if(modeSelect.value === "admin"){
+    adminInputs.style.display = "block";
+  } else {
+    adminInputs.style.display = "none";
+  }
+});
+
+enterVisitor.addEventListener("click", () => {
+  setModeVisitor();
+});
+
+btnCancel.addEventListener("click", () => {
+  modeSelect.value = "visitor";
+  adminInputs.style.display = "none";
+});
+
+function setModeVisitor(){
+  authPanel.style.display = "none";
+  uploadPanel.style.display = "none";
+  currentMode = "visitor";
+  renderPosts();
+}
+
+let currentMode = "visitor";
+
+/* ---------- BLOQUEO POR INTENTOS ---------- */
+function getAttempts(){
+  return parseInt(localStorage.getItem("afya_login_attempts") || "0", 10);
+}
+function setAttempts(n){
+  localStorage.setItem("afya_login_attempts", String(n));
+}
+function setLockUntil(ts){
+  localStorage.setItem("afya_lock_until", String(ts));
+}
+function getLockUntil(){
+  const v = localStorage.getItem("afya_lock_until");
+  return v ? parseInt(v,10) : 0;
+}
+function isLocked(){
+  const until = getLockUntil();
+  return Date.now() < until;
+}
+function remainingLockMs(){
+  const until = getLockUntil();
+  return Math.max(0, until - Date.now());
+}
+
+/* ---------- LOGIN BUTTON ---------- */
+btnLogin.addEventListener("click", () => {
+  if(isLocked()){
+    const remaining = Math.ceil(remainingLockMs()/60000);
+    alert("Acceso bloqueado. Inténtalo en " + remaining + " minutos.");
+    return;
+  }
+  const inputPass = passwordField.value || "";
+  const inputName = idName.value || "";
+
+  // Verifica nombre
+  const okName = normalizeName(inputName) === normalizeName(REQUIRED_NAME);
+  if(!okName){
+    alert("Nombre de identificación incorrecto. Debe ser exactamente: " + REQUIRED_NAME);
+    registerFailedAttempt();
+    return;
+  }
+
+  if(inputPass === ADMIN_PASSWORD){
+    // login OK
+    setAttempts(0);
+    authPanel.style.display = "none";
+    uploadPanel.style.display = "block";
+    currentMode = "admin";
+    passwordField.value = "";
+    postDesc.value = "";
+    postTitle.value = "";
+    alert("Acceso concedido como editor.");
+    renderPosts();
+  } else {
+    registerFailedAttempt();
+  }
+});
+
+function registerFailedAttempt(){
+  let attempts = getAttempts() + 1;
+  setAttempts(attempts);
+  if(attempts >= 3){
+    // bloquear 1 hora
+    const until = Date.now() + 60 * 60 * 1000;
+    setLockUntil(until);
+    setAttempts(0);
+    alert("Has excedido los intentos. Acceso bloqueado 1 hora.");
+  } else {
+    alert("Contraseña incorrecta. Intentos usados: " + attempts + " / 3");
+  }
+}
+
+/* ---------- CREAR POST ---------- */
+btnCreate.addEventListener("click", async () => {
+  if(currentMode !== "admin"){
+    alert("Solo administradores pueden crear publicaciones.");
+    return;
+  }
+  const title = postTitle.value.trim();
+  if(!title){
+    alert("Escribe un título.");
+    return;
+  }
+  const desc = postDesc.value.trim();
+  const file = fileInput.files && fileInput.files[0];
+  let fileData = null;
+  if(file){
+    // limit de tamaño: intentamos 10MB; si es mayor, advertimos
+    const maxBytes = 10 * 1024 * 1024;
+    if(file.size > maxBytes){
+      if(!confirm("El archivo es mayor a 10MB y puede no guardarse correctamente en localStorage. ¿Deseas continuar?")) return;
+    }
+    fileData = await fileToBase64(file);
+  }
+
+  // calcula expiry timestamp
+  let expiryTs = null;
+  if(expiryUnit.value !== "never" && expiryValue.value){
+    const val = Number(expiryValue.value);
+    if(isNaN(val) || val <= 0){ alert("Duración inválida."); return; }
+    let ms = 0;
+    if(expiryUnit.value === "minutes") ms = val * 60 * 1000;
+    else if(expiryUnit.value === "hours") ms = val * 60 * 60 * 1000;
+    else if(expiryUnit.value === "days") ms = val * 24 * 60 * 60 * 1000;
+    expiryTs = Date.now() + ms;
+  }
+
+  const posts = loadPosts();
+  const newPost = {
+    id: "p_" + Date.now() + "_" + Math.random().toString(36).slice(2,9),
+    title,
+    desc,
+    fileName: file ? file.name : null,
+    fileType: file ? file.type : null,
+    fileData, // Base64
+    createdAt: Date.now(),
+    createdBy: REQUIRED_NAME,
+    expiryTs // null o timestamp
+  };
+  posts.unshift(newPost);
+  savePosts(posts);
+  postTitle.value = ""; postDesc.value=""; fileInput.value="";
+  expiryValue.value = ""; expiryUnit.value = "never";
+  renderPosts();
+});
+
+/* ---------- FILE -> BASE64 ---------- */
+function fileToBase64(file){
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = (e) => rej(e);
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- RENDER POSTS ---------- */
+function renderPosts(){
+  const posts = loadPosts().filter(p => {
+    // Filtra expirados
+    if(p.expiryTs && Date.now() > p.expiryTs) return false;
+    return true;
+  });
+  postsContainer.innerHTML = "";
+  if(posts.length === 0){
+    noPosts.style.display = "block";
+    return;
+  } else noPosts.style.display = "none";
+
+  for(const p of posts){
+    const div = document.createElement("div");
+    div.className = "post panel";
+
+    // meta
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const left = document.createElement("div");
+    left.innerHTML = "<strong>" + escapeHtml(p.title) + "</strong><div class='muted'>por " + escapeHtml(p.createdBy) + " • " + new Date(p.createdAt).toLocaleString() + "</div>";
+    meta.appendChild(left);
+
+    const right = document.createElement("div");
+    right.className = "actions";
+    if(currentMode === "admin"){
+      const btnDel = document.createElement("button");
+      btnDel.textContent = "Borrar";
+      btnDel.style.background = "#ef4444";
+      btnDel.onclick = () => {
+        if(confirm("¿Borrar esta publicación?")) { deletePost(p.id); }
+      };
+      right.appendChild(btnDel);
+    }
+    meta.appendChild(right);
+
+    div.appendChild(meta);
+
+    // body
+    const body = document.createElement("div");
+    body.className = "body";
+    const descEl = document.createElement("div");
+    descEl.innerHTML = "<div style='white-space:pre-wrap;'>" + escapeHtml(p.desc || "") + "</div>";
+    body.appendChild(descEl);
+
+    if(p.fileData){
+      // mostrar miniatura si es imagen
+      if(p.fileType && p.fileType.startsWith("image/")){
+        const img = document.createElement("img");
+        img.className = "file-preview";
+        img.src = p.fileData;
+        body.appendChild(img);
+      } else {
+        // Mostrar enlace de descarga o vista en nueva pestaña
+        const link = document.createElement("a");
+        link.href = p.fileData;
+        link.target = "_blank";
+        link.textContent = "Abrir / Descargar: " + (p.fileName || "archivo");
+        link.className = "muted";
+        link.style.display = "block";
+        link.style.marginTop = "8px";
+        body.appendChild(link);
+      }
+    }
+
+    // expiry info
+    if(p.expiryTs){
+      const expDiv = document.createElement("div");
+      expDiv.className = "muted";
+      expDiv.style.marginTop = "8px";
+      const remainingMs = p.expiryTs - Date.now();
+      if(remainingMs > 0){
+        expDiv.textContent = "Caduca: " + new Date(p.expiryTs).toLocaleString();
+      } else {
+        expDiv.textContent = "Caducado";
+      }
+      body.appendChild(expDiv);
+    }
+
+    div.appendChild(body);
+    postsContainer.appendChild(div);
+  }
+}
+
+/* ---------- BORRAR POST ---------- */
+function deletePost(id){
+  let posts = loadPosts();
+  posts = posts.filter(p => p.id !== id);
+  savePosts(posts);
+  renderPosts();
+}
+
+/* ---------- UTIL ---------- */
+function escapeHtml(str){
+  if(!str) return "";
+  return String(str).replace(/[&<>"']/g, function(m){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+  });
+}
+
+/* ---------- LIMPIAR FORM ---------- */
+btnClear.addEventListener("click", () => {
+  postTitle.value = ""; postDesc.value = ""; fileInput.value = ""; expiryValue.value = ""; expiryUnit.value = "never";
+});
+
+/* ---------- AUTO-LIMPIEZA DE EXPIRADOS ---------- */
+// Elimina posts expirados periódicamente (cada 30s)
+setInterval(() => {
+  const posts = loadPosts();
+  const alive = posts.filter(p => !(p.expiryTs && Date.now() > p.expiryTs));
+  if(alive.length !== posts.length) savePosts(alive);
+  // re-render si es visible
+  renderPosts();
+}, 30000);
+
+/* ---------- CHECK LOCK AL CARGAR ---------- */
+window.addEventListener("load", () => {
+  if(isLocked()){
+    const mins = Math.ceil(remainingLockMs()/60000);
+    loginNote.textContent = "Acceso bloqueado: inténtalo en " + mins + " minutos.";
+    // bloquear inputs
+    passwordField.disabled = true; idName.disabled = true; btnLogin.disabled = true;
+    // reactivar cuando expire
+    setTimeout(() => location.reload(), Math.min(remainingLockMs(), 5*60*1000));
+  } else {
+    // restablecer bloqueo UI
+    passwordField.disabled = false; idName.disabled = false; btnLogin.disabled = false;
+  }
+  renderPosts();
+});
+
+/* ---------- INSTRUCCIONES PARA REEMPLAZAR IMAGENES/LOGO ---------- */
+/*
+  - Para cambiar el logo: reemplaza el atributo 'src' del elemento con id="siteLogo". Puedes
+    pegar una data URL (base64) o una ruta relativa: document.getElementById('siteLogo').src = 'ruta/logo.png';
+  - Para cambiar la foto de portada: cambiar id="heroImage" src.
+*/
+
+/* ---------- ADVERTENCIAS / SUGERENCIAS ---------- */
+/*
+  - Este sistema guarda los datos en localStorage -> sólo visibles en este navegador y equipo.
+  - Para un portal multiusuario/multi-dispositivo debes implementar un backend (ej. Node.js + almacenamiento en disco o en S3 + base de datos).
+  - Las contraseñas en frontend son visibles en el código; para producción usa autenticación segura en servidor.
+*/
+
+</script>
+</body>
+</html>
